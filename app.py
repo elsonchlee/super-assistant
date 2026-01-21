@@ -54,118 +54,130 @@ If it's chat, return plain text response (in the persona of Octavia).
 """
 
 # --- CSS (Premium Glassmorphism & Cyberpunk Style) ---
+# --- CSS (Professional Dashboard Style - Light/Blue) ---
 st.markdown("""
 <style>
-    /* Global Font & Reset */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+    /* Import Professional Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
+    /* Global Settings */
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
+        color: #1e293b; 
     }
-
-    /* Background - Deep Space Gradient */
+    
+    /* Background - Clean Light Gray like the dashboard */
     .stApp {
-        background: radial-gradient(circle at 10% 20%, #0a0e17 0%, #04070a 90%);
-        color: #e0e0e0;
+        background-color: #f8fafc;
     }
 
-    /* Headers - Techy & Glowing */
-    h1, h2, h3 {
-        font-family: 'JetBrains Mono', monospace !important;
-        background: linear-gradient(90deg, #00f2ff, #00ff99);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
-        letter-spacing: -1px;
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
     }
 
-    /* Glass Cards for Layout */
+    /* Metric Cards Styling (Mimicking the Blue/White cards) */
+    div[data-testid="metric-container"] {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+    }
+    div[data-testid="metric-container"]:hover {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border-color: #3b82f6; /* Dashboard Blue Accent */
+    }
+    
+    /* Chat Message Bubbles */
     .stChatMessage {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-        transition: transform 0.2s ease;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
-    .stChatMessage:hover {
-        transform: translateY(-2px);
-        border-color: rgba(0, 242, 255, 0.2);
-    }
-
-    /* Buttons - Cyberpunk Style */
+    
+    /* Primary Buttons (Dashboard Blue) */
     .stButton>button {
-        background: rgba(0, 242, 255, 0.05);
-        border: 1px solid rgba(0, 242, 255, 0.2);
-        color: #00f2ff;
+        background-color: #2563eb; /* Blue 600 */
+        color: white;
+        border: none;
         border-radius: 8px;
-        font-family: 'JetBrains Mono', monospace;
-        letter-spacing: 1px;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
         font-weight: 600;
+        padding: 0.5rem 1rem;
+        transition: background 0.2s;
     }
     .stButton>button:hover {
-        background: rgba(0, 242, 255, 0.15);
-        box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
-        border-color: #00f2ff;
+        background-color: #1d4ed8; /* Blue 700 */
         color: white;
     }
 
-    /* Camera Input - Hidden by Default Styling */
-    [data-testid="stExpander"] {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-    }
-    
-    /* Clean up top bar */
+    /* Hide standard headers */
     header {visibility: hidden;}
     footer {visibility: hidden;}
-    
+
 </style>
 """, unsafe_allow_html=True)
 
 # --- 核心逻辑 ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    # Octavia 的经典开场
-    st.session_state.messages.append({"role": "assistant", "content": "Octavia v2.0 Online. Systems Nominal. Ready for directive."})
+    st.session_state.messages.append({"role": "assistant", "content": "Octavia Dashboard initialized. Waiting for input."})
 
-# Modern Title Layout
-c1, c2 = st.columns([0.8, 0.2])
-with c1:
-    st.title("🦅 OCTAVIA")
-with c2:
-    st.caption(f"SYSTEM DATE: {database.date.today().isoformat()}")
+# --- Sidebar (Navigation & Controls) ---
+with st.sidebar:
+    st.title("🦅 Octavia OS")
+    st.caption("ver 2.4.0 • SUPER ASSISTANT")
+    
+    st.markdown("---")
+    
+    # Input Mode Selection
+    input_mode = st.radio("Input Channel", ["Voice Command", "Visual Scan"], index=0)
+    
+    st.markdown("---")
+    
+    # Camera is hidden here, only shown if selected
+    cam_input = None
+    audio = None
+    
+    if input_mode == "Visual Scan":
+        st.info("Visual Module Active")
+        cam_input = st.camera_input("Scanner")
+    else:
+        st.info("Voice Module Active")
+        audio = mic_recorder(
+            start_prompt="🔴 START RECORDING",
+            stop_prompt="⬛ STOP",
+            key='recorder',
+            format='webm'
+        )
 
-# --- 功能区 (Modern Layout) ---
-col1, col2 = st.columns([1, 1])
+# --- Main Dashboard Area (Top Metrics) ---
+# Mimicking the card layout from the screenshot
+st.markdown("### 📊 System Overview")
+m1, m2, m3, m4 = st.columns(4)
+today_str = database.date.today().isoformat()
+daily_spend = database.get_today_total()
 
-with col1:
-    # Voice Interface
-    audio = mic_recorder(
-        start_prompt="🔴 VOICE COMMAND",
-        stop_prompt="⬛ PROCESSING",
-        key='recorder',
-        format='webm'
-    )
+with m1:
+    st.metric(label="Today's Date", value=today_str)
+with m2:
+    st.metric(label="Daily Expense", value=f"RM {daily_spend:.2f}", delta="Updated Live")
+with m3:
+    st.metric(label="System Status", value="ONLINE", delta="Stable", delta_color="normal")
+with m4:
+    st.metric(label="Pending Tasks", value="0", value_help="Integrate Todo List later")
 
-with col2:
-    # Hidden Vision System
-    with st.expander("👁️ VISION SYSTEM (OFFLINE)", expanded=False):
-        st.caption("Activate to allow Octavia to see.")
-        cam_input = st.camera_input("SCANNING MODULE")
+st.markdown("---")
 
-# --- AI 处理逻辑 ---
+# --- AI Handling Logic ---
 def process_input(user_content, is_audio=False):
     today = database.date.today().isoformat()
-    # 注入 Octavia 的灵魂
     prompt = OCTAVIA_SYSTEM_PROMPT.format(date=today)
     
     try:
-        # 调用 Gemini
         if is_audio:
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".webm")
             tfile.write(user_content)
@@ -175,17 +187,15 @@ def process_input(user_content, is_audio=False):
                 time.sleep(0.5)
                 myfile = genai.get_file(myfile.name)
             response = model.generate_content([prompt, myfile])
-            
         elif isinstance(user_content, str):
             response = model.generate_content(f"{prompt}\nUser Input: {user_content}")
-            
-        else: # Camera
+        else: 
             response = model.generate_content([prompt, "User uploaded this image:", user_content])
 
         text = response.text
         reply = text 
         
-        # JSON 解析
+        # JSON Processing
         import json
         try:
             start = text.find('{')
@@ -195,51 +205,53 @@ def process_input(user_content, is_audio=False):
                 
                 if data.get('type') == 'record':
                      database.add_transaction(data['date'], data['item'], data['amount'], data['category'], data.get('comment',''))
-                     reply = f"✅ **TRANSACTION LOGGED**\n- Item: {data['item']}\n- Amount: RM{data['amount']}\n- Note: {data.get('comment', 'N/A')}"
+                     reply = f"✅ **记录成功** | {data['item']} - RM{data['amount']}"
                      
                 elif data.get('type') == 'query_finance':
                      t_date = data.get('target_date', today)
                      total, items = database.get_expenses_by_date(t_date)
-                     item_str = "\n".join([f"- {i}" for i in items])
-                     reply = f"💰 **FINANCIAL REPORT ({t_date})**\nTotal Expenditure: **RM{total:.2f}**\n\n{item_str}"
+                     # Format layout for finance report
+                     reply = f"💰 **{t_date} 财务报表**\n\n**总支出: RM{total:.2f}**\n\n" + "\n".join([f"- {i}" for i in items])
                 
                 elif data.get('type') == 'query_vercel':
                     action = data.get('action')
                     if action == 'status':
                         status = vercel_bot.get_latest_deployments()
-                        reply = f"📊 **SYSTEM DIAGNOSTICS**:\n{status}"
+                        reply = f"📊 **Vercel Report**\n{status}"
                     elif action == 'list_projects':
                         projs = vercel_bot.get_project_list()
-                        reply = f"📦 **AVAILABLE MODULES**:\n{projs}"
-
+                        reply = f"📦 **Projects**\n{projs}"
         except:
             pass 
-            
         return reply
 
     except Exception as e:
-        return f"⚠️ SYSTEM ERROR: {e}"
+        return f"System Error: {e}"
 
-# --- 循环 ---
+# --- Main Chat Interface ---
+st.markdown("### 💬 Octavia Chat")
 
+# Process Inputs
 if audio:
     with st.chat_message("user"):
-        st.write("🎤 [Audio Encrypted]")
+        st.write("🎤 [Voice Command Received]")
     with st.chat_message("assistant"):
-        with st.spinner("Processing Signal..."):
+        with st.spinner("Processing..."):
             reply = process_input(audio['bytes'], is_audio=True)
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.rerun() # Refresh to update metrics
 
 elif cam_input:
     with st.chat_message("user"):
-        st.image(cam_input)
+        st.image(cam_input, width=300)
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing Visual Data..."):
+        with st.spinner("Scanning..."):
             reply = process_input(cam_input, is_audio=False)
             st.write(reply)
+            st.session_state.messages.append({"role": "assistant", "content": reply})
 
-st.divider()
-for msg in reversed(st.session_state.messages):
+# Display History (Last 10 messages to keep UI clean)
+for msg in reversed(st.session_state.messages[-10:]):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
