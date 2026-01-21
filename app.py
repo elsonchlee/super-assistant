@@ -26,6 +26,29 @@ if "GEMINI_API_KEY" not in os.environ:
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-2.0-flash')
 
+# --- 🔌 API MODE (FOR SIRI / SHORTCUTS) ---
+# Allows "Octavia Anywhere" via URL: ?api=true&q=Hello&pwd=admin
+query_params = st.query_params
+if "api" in query_params:
+    api_pwd = query_params.get("pwd", "")
+    user_q = query_params.get("q", "")
+    
+    # Simple Auth Check
+    PASSWORD = os.environ.get("OCTAVIA_PASSWORD", "admin")
+    
+    if api_pwd == PASSWORD:
+        if user_q:
+            # Process the query using the same brain
+            with st.spinner("Processing API Request..."):
+                reply = process_input(user_q, is_audio=True) # Treat as audio (chat mode)
+                st.write(reply) # Output for Siri to grab
+        else:
+            st.write("Octavia: Listening...")
+    else:
+        st.write("⛔ ACCESS DENIED: Wrong Password")
+    
+    st.stop() # 🛑 STOP HERE - Do not render the rest of the UI
+
 # --- 🔐 SECURITY LAYER (ACCESS CONTROL) ---
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -318,35 +341,70 @@ with tab_cmd:
 # 2. ASSETS (The CFO)
 with tab_assets:
     st.markdown("### 💰 WEALTH DASHBOARD")
+    
+    # Live Data
+    assets = database.get_assets()
+    net_worth = assets.get("NetWorth", 0)
+    cash = assets.get("Cash", 0)
+    invest = assets.get("Investments", 0)
+    
     a1, a2, a3 = st.columns(3)
-    a1.metric("NET WORTH (EST)", "RM 1,250,500", "+2.4%")
-    a2.metric("CASH", "RM 450,000", "-1.2%")
-    a3.metric("INVESTMENTS", "RM 800,500", "+5.1%")
+    a1.metric("NET WORTH", f"RM {net_worth:,.2f}")
+    a2.metric("CASH", f"RM {cash:,.2f}")
+    a3.metric("INVESTMENTS", f"RM {invest:,.2f}")
     
     st.markdown("#### 📊 DAILY EXPENSE")
     st.metric("Today's Total", f"RM {database.get_today_total():.2f}")
     
-    st.write("*(Assets Database Table - Coming Soon)*")
+    with st.expander("Update Balance"):
+        with st.form("asset_update"):
+            cat = st.selectbox("Category", ["Cash", "Investments", "Crypto", "Other"])
+            amt = st.number_input("New Balance (RM)", min_value=0.0)
+            if st.form_submit_button("Update"):
+                database.update_asset(cat, amt)
+                st.success("Asset Updated")
+                st.rerun()
 
 # 3. WORK (The Strategist)
 with tab_work:
     st.markdown("### 🏢 COMPANY OPERATIONS")
-    st.metric("PENDING TASKS", "12", "3 Urgent")
-    st.write("**TODAY'S APPOINTMENTS**")
-    st.info("- [10:00 AM] Strategy Meeting w/ Partners")
-    st.info("- [02:00 PM] Legal Review")
+    
+    tasks = database.get_tasks()
+    t_pending = len(tasks)
+    t_high = len([t for t in tasks if t.get('Priority') == 'High'])
+    
+    st.metric("PENDING TASKS", f"{t_pending}", f"{t_high} Urgent")
+    
+    c1, c2 = st.columns([2, 1])
+    with c1:
+        st.write("**TASK BOARD**")
+        if not tasks:
+            st.info("No pending tasks. You are free!")
+        for t in tasks:
+            prio_icon = "🔴" if t.get('Priority') == 'High' else "🔵"
+            st.markdown(f"{prio_icon} **{t.get('Task')}**")
+            
+    with c2:
+        with st.form("add_task"):
+            new_task = st.text_input("New Task")
+            new_prio = st.selectbox("Priority", ["Normal", "High"])
+            if st.form_submit_button("Add Task"):
+                database.add_task(new_task, new_prio)
+                st.rerun()
 
 # 4. LIFE (Bio-Hacker & CRM)
 with tab_life:
     l1, l2 = st.columns(2)
     with l1:
         st.markdown("### 🏥 BIO-HACKER")
-        st.metric("SLEEP", "6h 20m", "Needs Improvement", delta_color="inverse")
-        st.write("**TODAY'S MISSION:** Low impact cardio due to low recovery.")
+        # In future: Sync from Apple Health via Shortcut API
+        st.metric("SLEEP", "Calculating...", "Syncing...") 
+        st.write("**TODAY'S MISSION:** Standard Maintenance")
         
     with l2:
         st.markdown("### 🤝 CRM & PEOPLE")
         st.write("**IMPORTANT DATES**")
         st.success("🎂 **Melvas Birthday**: 3 Days Left (Gift: Whisky prepared)")
         st.write("**RECENT INTERACTIONS**")
-        st.write("- Met **Mr. Tan** yesterday (Topic: Golf)")
+        # In future: Fetch from Memory Context
+        st.write("- System Ready for CRM Log")

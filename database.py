@@ -108,3 +108,74 @@ def save_memory(category, observation, context=""):
         return True
     except:
         return False
+
+# --- Assets Core (The CFO) ---
+def get_assets():
+    """获取资产列表"""
+    if not sheet: return {"Cash": 0, "Investments": 0, "NetWorth": 0}
+    try:
+        try:
+            asset_sheet = client.open_by_key(SHEET_ID).worksheet("Assets")
+        except:
+            asset_sheet = client.open_by_key(SHEET_ID).add_worksheet(title="Assets", rows=100, cols=3)
+            asset_sheet.append_row(["Category", "Amount", "LastUpdated"])
+            # Init default data
+            asset_sheet.append_row(["Cash", "0", date.today().isoformat()])
+            asset_sheet.append_row(["Investments", "0", date.today().isoformat()])
+
+        records = asset_sheet.get_all_records()
+        assets = {"Cash": 0, "Investments": 0, "NetWorth": 0}
+        
+        for r in records:
+            cat = r.get("Category")
+            amt = float(str(r.get("Amount")).replace(",",""))
+            if cat in assets:
+                assets[cat] = amt
+            else:
+                assets[cat] = amt # Dynamic categories
+        
+        assets["NetWorth"] = sum([v for k,v in assets.items() if k != "NetWorth"])
+        return assets
+    except Exception as e:
+        return {"Error": str(e)}
+
+def update_asset(category, amount):
+    """更新资产余额"""
+    if not sheet: return False
+    try:
+        ws = client.open_by_key(SHEET_ID).worksheet("Assets")
+        cell = ws.find(category)
+        if cell:
+            ws.update_cell(cell.row, 2, amount)
+            ws.update_cell(cell.row, 3, date.today().isoformat())
+        else:
+            ws.append_row([category, amount, date.today().isoformat()])
+        return True
+    except Exception as e:
+        return False
+
+# --- Tasks Core (The Strategist) ---
+def get_tasks():
+    """获取待办事项"""
+    if not sheet: return []
+    try:
+        try:
+            task_sheet = client.open_by_key(SHEET_ID).worksheet("Tasks")
+        except:
+            task_sheet = client.open_by_key(SHEET_ID).add_worksheet(title="Tasks", rows=1000, cols=4)
+            task_sheet.append_row(["Date", "Task", "Status", "Priority"])
+        
+        records = task_sheet.get_all_records()
+        pending = [r for r in records if r.get("Status") != "Done"]
+        return pending
+    except:
+        return []
+
+def add_task(task_name, priority="Normal"):
+    if not sheet: return False
+    try:
+        ws = client.open_by_key(SHEET_ID).worksheet("Tasks")
+        ws.append_row([date.today().isoformat(), task_name, "Pending", priority])
+        return True
+    except:
+        return False
