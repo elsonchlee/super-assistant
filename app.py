@@ -294,46 +294,69 @@ with tab_cmd:
         
     with c2:
         st.info("📷 **CAMERA**")
-        # Camera is only active if expanded to save UI space/resources
-        if st.toggle("Activate Camera"):
-            cam_val = st.camera_input("SNAP", label_visibility="collapsed")
-        else:
-            cam_val = None
-            st.caption("Camera Offline")
+        # Toggle camera to save resources/screen space
+        img_file_buffer = st.camera_input("SNAP", label_visibility="collapsed")
         
     with c3:
         st.info("📤 **UPLOAD**")
-        upl_val = st.file_uploader("Upload", label_visibility="collapsed")
+        upl_val = st.file_uploader("Image", type=['jpg','png','jpeg'], key="upl_img", label_visibility="collapsed")
         
     with c4:
         st.info("🎥 **VIDEO**")
-        if st.button("Start / Stop Video"):
-            st.warning("Video Module: Coming in Phase 10.1")
+        vid_val = st.file_uploader("Video", type=['mp4','mov','webm'], key="upl_vid", label_visibility="collapsed")
             
     st.divider()
     
     # 🧠 INTELLIGENCE OUTPUT AREA
     st.markdown("### 🦅 OCTAVIA RESPONSE")
     
-    # Logic to handle inputs
+    # Logic to handle inputs - Priority Queue
     input_content = None
     is_audio = False
     
     if audio_val:
         input_content = audio_val['bytes']
         is_audio = True
-    elif cam_val:
-        input_content = cam_val
+    elif vid_val:
+        st.video(vid_val)
+        # For video, we pass the file object directly to Gemini
+        input_content = vid_val
+        is_audio = False 
+    elif img_file_buffer:
+        input_content = img_file_buffer
+        is_audio = False
     elif upl_val:
-        input_content = upl_val
         st.image(upl_val, width=200)
+        input_content = upl_val
+        is_audio = False
 
     if input_content:
         # Re-use previous processing logic
         with st.spinner("🦅 Octavia is analyzing..."):
-            reply = process_input(input_content, is_audio=is_audio)
-            st.success("ANALYSIS COMPLETE")
-            st.markdown(f"> {reply}")
+            # If it's a video file object, we need to handle it differently in process_input
+            if vid_val:
+                 # Special handling for video upload to Gemini
+                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+                 tfile.write(vid_val.read()) # Write video bytes
+                 tfile.close()
+                 
+                 # Upload to Gemini
+                 myfile = genai.upload_file(tfile.name)
+                 while myfile.state.name == "PROCESSING":
+                     time.sleep(1)
+                     myfile = genai.get_file(myfile.name)
+                 
+                 # Generate thinking
+                 prompt = OCTAVIA_SYSTEM_PROMPT.format(date=database.date.today().isoformat())
+                 response = model.generate_content([prompt, myfile])
+                 st.success("VIDEO ANALYSIS COMPLETE")
+                 st.markdown(f"> {response.text}")
+                 
+            else:
+                # Standard Photo/Audio processing
+                reply = process_input(input_content, is_audio=is_audio)
+                st.success("ANALYSIS COMPLETE")
+                st.markdown(f"> {reply}")
             
     else:
         st.info("Waiting for input command...")
