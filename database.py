@@ -1,6 +1,7 @@
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import date
+import os
 
 # 1. 连接 Google Sheets
 try:
@@ -61,3 +62,9 @@ def get_expenses_by_date(target_date_str):
         return total, items
     except Exception as e:
         return 0, [f"查询出错: {e}"]
+
+def get_today_total():
+    """快捷获取今日总额"""
+    today = date.today().isoformat()
+    total, _ = get_expenses_by_date(today)
+    return total
