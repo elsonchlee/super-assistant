@@ -295,7 +295,11 @@ with tab_cmd:
     with c2:
         st.info("📷 **CAMERA**")
         # Toggle camera to save resources/screen space
-        img_file_buffer = st.camera_input("SNAP", label_visibility="collapsed")
+        if st.toggle("Activate Camera"):
+            img_file_buffer = st.camera_input("SNAP", label_visibility="collapsed")
+        else:
+            img_file_buffer = None
+            st.caption("Camera Offline")
         
     with c3:
         st.info("📤 **UPLOAD**")
