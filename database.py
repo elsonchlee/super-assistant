@@ -68,3 +68,43 @@ def get_today_total():
     today = date.today().isoformat()
     total, _ = get_expenses_by_date(today)
     return total
+
+# --- Memory Core (Long-Term Memory) ---
+def get_memories():
+    """读取所有记忆"""
+    if not sheet: return "No Memory Bank available."
+    try:
+        # 尝试连接 Memory Sheet
+        try:
+            mem_sheet = client.open_by_key(SHEET_ID).worksheet("Memory")
+        except:
+            # 如果不存在，尝试创建（或返回空）
+            try:
+                mem_sheet = client.open_by_key(SHEET_ID).add_worksheet(title="Memory", rows=1000, cols=4)
+                mem_sheet.append_row(["Date", "Category", "Observation", "Context"])
+            except:
+                return "Memory System Offline (Please create 'Memory' tab in Sheets)"
+        
+        records = mem_sheet.get_all_records()
+        if not records:
+            return "No memories yet."
+            
+        # 格式化记忆为文本
+        memory_text = ""
+        for r in records:
+            memory_text += f"- [{r.get('Category')}] {r.get('Observation')} (Context: {r.get('Context')})\n"
+        return memory_text
+
+    except Exception as e:
+        return f"Memory Error: {e}"
+
+def save_memory(category, observation, context=""):
+    """写入新记忆"""
+    if not sheet: return "Error: No Sheet"
+    try:
+        mem_sheet = client.open_by_key(SHEET_ID).worksheet("Memory")
+        today = date.today().isoformat()
+        mem_sheet.append_row([today, category, observation, context])
+        return True
+    except:
+        return False
