@@ -168,7 +168,7 @@ with m2:
 with m3:
     st.metric(label="System Status", value="ONLINE", delta="Stable", delta_color="normal")
 with m4:
-    st.metric(label="Pending Tasks", value="0", value_help="Integrate Todo List later")
+    st.metric(label="Pending Tasks", value="0", help="Integrate Todo List later")
 
 st.markdown("---")
 
