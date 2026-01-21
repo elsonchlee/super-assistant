@@ -24,7 +24,8 @@ if "GEMINI_API_KEY" not in os.environ:
     st.stop()
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-2.0-flash')
+# 🚀 UPGRADE: Switching to Gemini 3.0 (Next-Gen)
+model = genai.GenerativeModel('gemini-3-flash-preview')
 
 # --- 🔌 API MODE (FOR SIRI / SHORTCUTS) ---
 # Allows "Octavia Anywhere" via URL: ?api=true&q=Hello&pwd=admin
