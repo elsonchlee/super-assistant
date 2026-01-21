@@ -53,14 +53,77 @@ If it's a command, return JSON ONLY.
 If it's chat, return plain text response (in the persona of Octavia).
 """
 
-# --- CSS ---
+# --- CSS (Premium Glassmorphism & Cyberpunk Style) ---
 st.markdown("""
 <style>
-    .stApp { background-color: #0e1117; color: #00FF99; }
-    h1, h2, h3 { color: #00FF99 !important; font-family: 'Courier New', Courier, monospace; }
-    .stButton>button { border: 2px solid #00FF99; border-radius: 5px; color: #00FF99; background: transparent; }
-    .stButton>button:hover { background: #00FF99; color: black; }
-    .stChatInput { position: fixed; bottom: 0; }
+    /* Global Font & Reset */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Background - Deep Space Gradient */
+    .stApp {
+        background: radial-gradient(circle at 10% 20%, #0a0e17 0%, #04070a 90%);
+        color: #e0e0e0;
+    }
+
+    /* Headers - Techy & Glowing */
+    h1, h2, h3 {
+        font-family: 'JetBrains Mono', monospace !important;
+        background: linear-gradient(90deg, #00f2ff, #00ff99);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        letter-spacing: -1px;
+    }
+
+    /* Glass Cards for Layout */
+    .stChatMessage {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease;
+    }
+    .stChatMessage:hover {
+        transform: translateY(-2px);
+        border-color: rgba(0, 242, 255, 0.2);
+    }
+
+    /* Buttons - Cyberpunk Style */
+    .stButton>button {
+        background: rgba(0, 242, 255, 0.05);
+        border: 1px solid rgba(0, 242, 255, 0.2);
+        color: #00f2ff;
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    .stButton>button:hover {
+        background: rgba(0, 242, 255, 0.15);
+        box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+        border-color: #00f2ff;
+        color: white;
+    }
+
+    /* Camera Input - Hidden by Default Styling */
+    [data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+    }
+    
+    /* Clean up top bar */
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -68,25 +131,32 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = []
     # Octavia 的经典开场
-    st.session_state.messages.append({"role": "assistant", "content": "Octavia Online. Key secured. I am ready to go to war when you are."})
+    st.session_state.messages.append({"role": "assistant", "content": "Octavia v2.0 Online. Systems Nominal. Ready for directive."})
 
-st.title("🦅 OCTAVIA SYSTEM")
+# Modern Title Layout
+c1, c2 = st.columns([0.8, 0.2])
+with c1:
+    st.title("🦅 OCTAVIA")
+with c2:
+    st.caption(f"SYSTEM DATE: {database.date.today().isoformat()}")
 
-# --- 功能区 ---
+# --- 功能区 (Modern Layout) ---
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.markdown("### 🔊 VOICE CHANNEL")
+    # Voice Interface
     audio = mic_recorder(
-        start_prompt="🔴 TALK TO OCTAVIA",
-        stop_prompt="⬛ SEND",
+        start_prompt="🔴 VOICE COMMAND",
+        stop_prompt="⬛ PROCESSING",
         key='recorder',
         format='webm'
     )
 
 with col2:
-    st.markdown("### 👁️ VISION CHANNEL")
-    cam_input = st.camera_input("SCAN")
+    # Hidden Vision System
+    with st.expander("👁️ VISION SYSTEM (OFFLINE)", expanded=False):
+        st.caption("Activate to allow Octavia to see.")
+        cam_input = st.camera_input("SCANNING MODULE")
 
 # --- AI 处理逻辑 ---
 def process_input(user_content, is_audio=False):
@@ -125,22 +195,22 @@ def process_input(user_content, is_audio=False):
                 
                 if data.get('type') == 'record':
                      database.add_transaction(data['date'], data['item'], data['amount'], data['category'], data.get('comment',''))
-                     reply = f"[Octavia]: 已记账。{data['item']} (RM{data['amount']})。{data.get('comment', '')}"
+                     reply = f"✅ **TRANSACTION LOGGED**\n- Item: {data['item']}\n- Amount: RM{data['amount']}\n- Note: {data.get('comment', 'N/A')}"
                      
                 elif data.get('type') == 'query_finance':
                      t_date = data.get('target_date', today)
                      total, items = database.get_expenses_by_date(t_date)
                      item_str = "\n".join([f"- {i}" for i in items])
-                     reply = f"💰 **{t_date} 账单汇报**\n总计: RM{total:.2f}\n{item_str}"
+                     reply = f"💰 **FINANCIAL REPORT ({t_date})**\nTotal Expenditure: **RM{total:.2f}**\n\n{item_str}"
                 
                 elif data.get('type') == 'query_vercel':
                     action = data.get('action')
                     if action == 'status':
                         status = vercel_bot.get_latest_deployments()
-                        reply = f"📊 **Vercel 系统报告**:\n{status}"
+                        reply = f"📊 **SYSTEM DIAGNOSTICS**:\n{status}"
                     elif action == 'list_projects':
                         projs = vercel_bot.get_project_list()
-                        reply = f"📦 **项目清单**:\n{projs}"
+                        reply = f"📦 **AVAILABLE MODULES**:\n{projs}"
 
         except:
             pass 
@@ -148,15 +218,15 @@ def process_input(user_content, is_audio=False):
         return reply
 
     except Exception as e:
-        return f"System Error: {e}"
+        return f"⚠️ SYSTEM ERROR: {e}"
 
 # --- 循环 ---
 
 if audio:
     with st.chat_message("user"):
-        st.write("🎤 [Audio]")
+        st.write("🎤 [Audio Encrypted]")
     with st.chat_message("assistant"):
-        with st.spinner("Octavia is thinking..."):
+        with st.spinner("Processing Signal..."):
             reply = process_input(audio['bytes'], is_audio=True)
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
@@ -165,7 +235,7 @@ elif cam_input:
     with st.chat_message("user"):
         st.image(cam_input)
     with st.chat_message("assistant"):
-        with st.spinner("Octavia is analyzing..."):
+        with st.spinner("Analyzing Visual Data..."):
             reply = process_input(cam_input, is_audio=False)
             st.write(reply)
 
